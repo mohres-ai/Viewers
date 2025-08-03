@@ -28,9 +28,9 @@ window.config = {
         friendlyName: 'Local PACS Backend Server',
         name: 'Python PACS',
         // Main DICOMweb endpoints pointing to our FastAPI backend
-        qidoRoot: 'http://localhost:8000/api/v1/qido',
-        wadoRoot: 'http://localhost:8000/api/v1/wado',
-        stowRoot: 'http://localhost:8000/api/v1/stow',
+        qidoRoot: 'http://localhost:8000/api/v1/qido-rs',
+        wadoRoot: 'http://localhost:8000/api/v1/wado-rs',
+        stowRoot: 'http://localhost:8000/api/v1/stow-rs',
         
         // Authentication configuration
         requestOptions: {
