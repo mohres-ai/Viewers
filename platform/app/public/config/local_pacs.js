@@ -75,32 +75,32 @@ window.config = {
       },
     },
     
-    // Fallback to demo data sources for testing
-    {
-      namespace: '@ohif/extension-default.dataSourcesModule.dicomweb',
-      sourceName: 'demo',
-      configuration: {
-        friendlyName: 'Demo AWS S3 Static Server',
-        name: 'aws',
-        wadoUriRoot: 'https://d14fa38qiwhyfd.cloudfront.net/dicomweb',
-        qidoRoot: 'https://d14fa38qiwhyfd.cloudfront.net/dicomweb',
-        wadoRoot: 'https://d14fa38qiwhyfd.cloudfront.net/dicomweb',
-        qidoSupportsIncludeField: false,
-        imageRendering: 'wadors',
-        thumbnailRendering: 'wadors',
-        enableStudyLazyLoad: true,
-        supportsFuzzyMatching: true,
-        supportsWildcard: false,
-        staticWado: true,
-        singlepart: 'bulkdata,video',
-        bulkDataURI: {
-          enabled: true,
-          relativeResolution: 'studies',
-          transform: url => url.replace('/pixeldata.mp4', '/rendered'),
-        },
-        omitQuotationForMultipartRequest: true,
-      },
-    },
+    // Demo data source commented out to force local PACS usage
+    // {
+    //   namespace: '@ohif/extension-default.dataSourcesModule.dicomweb',
+    //   sourceName: 'demo',
+    //   configuration: {
+    //     friendlyName: 'Demo AWS S3 Static Server',
+    //     name: 'aws',
+    //     wadoUriRoot: 'https://d14fa38qiwhyfd.cloudfront.net/dicomweb',
+    //     qidoRoot: 'https://d14fa38qiwhyfd.cloudfront.net/dicomweb',
+    //     wadoRoot: 'https://d14fa38qiwhyfd.cloudfront.net/dicomweb',
+    //     qidoSupportsIncludeField: false,
+    //     imageRendering: 'wadors',
+    //     thumbnailRendering: 'wadors',
+    //     enableStudyLazyLoad: true,
+    //     supportsFuzzyMatching: true,
+    //     supportsWildcard: false,
+    //     staticWado: true,
+    //     singlepart: 'bulkdata,video',
+    //     bulkDataURI: {
+    //       enabled: true,
+    //       relativeResolution: 'studies',
+    //       transform: url => url.replace('/pixeldata.mp4', '/rendered'),
+    //     },
+    //     omitQuotationForMultipartRequest: true,
+    //   },
+    // },
     
     // DICOM JSON support
     {
