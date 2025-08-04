@@ -32,13 +32,12 @@ window.config = {
         wadoRoot: 'http://localhost:8000/api/v1/wado-rs',
         stowRoot: 'http://localhost:8000/api/v1/stow-rs',
         
-        // Authentication configuration
-        requestOptions: {
-          auth: {
-            type: 'bearer', // JWT authentication
-            // Token will be added dynamically by OHIF based on user authentication
-          }
-        },
+        // No authentication for development
+        // requestOptions: {
+        //   auth: {
+        //     type: 'bearer',
+        //   }
+        // },
         
         // Backend capabilities
         qidoSupportsIncludeField: true,
@@ -143,19 +142,17 @@ window.config = {
     }
   },
   
-  // Authentication configuration for JWT integration
-  oidc: [
-    {
-      // This would be configured for production authentication
-      // For now, we'll handle JWT tokens manually in the backend
-      authority: 'http://localhost:8000',
-      client_id: 'ohif-pacs-viewer',
-      redirect_uri: 'http://localhost:3000/callback',
-      response_type: 'code',
-      scope: 'openid profile email',
-      post_logout_redirect_uri: 'http://localhost:3000/',
-    },
-  ],
+  // Authentication configuration disabled for development
+  // oidc: [
+  //   {
+  //     authority: 'http://localhost:8000',
+  //     client_id: 'ohif-pacs-viewer',
+  //     redirect_uri: 'http://localhost:3000/callback',
+  //     response_type: 'code',
+  //     scope: 'openid profile email',
+  //     post_logout_redirect_uri: 'http://localhost:3000/',
+  //   },
+  // ],
   
   // White labeling for PACS system
   whiteLabeling: {

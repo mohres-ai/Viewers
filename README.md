@@ -159,6 +159,9 @@ yarn config set workspaces-experimental true
 
 # Restore dependencies
 yarn install
+
+# local pacs
+NODE_ENV=development APP_CONFIG=config/local_pacs.js yarn run dev
 ```
 
 ## Commands
