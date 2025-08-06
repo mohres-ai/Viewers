@@ -26,7 +26,7 @@ window.config = {
       sourceName: 'local_pacs',
       configuration: {
         friendlyName: 'Local PACS Backend Server',
-        name: 'Python PACS',
+        name: 'PAXELIA PACS',
         // Main DICOMweb endpoints pointing to our FastAPI backend
         qidoRoot: 'http://localhost:8000/api/v1/qido-rs',
         wadoRoot: 'http://localhost:8000/api/v1/wado-rs',
@@ -174,7 +174,7 @@ window.config = {
               key: 'title',
               className: 'text-white text-lg font-semibold',
             },
-            'Python PACS System'
+            'PAXELIA PACS System'
           ),
         ]
       );

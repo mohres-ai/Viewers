@@ -34,6 +34,8 @@ export type DicomWebConfig = {
   /** Base URL to use for QIDO requests */
   qidoRoot?: string;
   wadoRoot?: string; // - Base URL to use for WADO requests
+  /** Base URL to use for STOW requests */
+  stowRoot?: string;
   wadoUri?: string; // - Base URL to use for WADO URI requests
   qidoSupportsIncludeField?: boolean; // - Whether QIDO supports the "Include" option to request additional fields in response
   imageRendering?: string; // - wadors | ? (unsure of where/how this is used)
@@ -102,8 +104,10 @@ function createDicomWebApi(dicomWebConfig: DicomWebConfig, servicesManager) {
   let dicomWebConfigCopy,
     qidoConfig,
     wadoConfig,
+    stowConfig,
     qidoDicomWebClient,
     wadoDicomWebClient,
+    stowDicomWebClient,
     getAuthorizationHeader,
     generateWadoHeader;
   // Default to enabling bulk data retrieves, with no other customization as
@@ -163,8 +167,18 @@ function createDicomWebApi(dicomWebConfig: DicomWebConfig, servicesManager) {
         supportsFuzzyMatching: dicomWebConfig.supportsFuzzyMatching,
       };
 
-      // TODO -> Two clients sucks, but its better than 1000.
+      stowConfig = {
+        url: dicomWebConfig.stowRoot || dicomWebConfig.wadoRoot, // Fallback to wadoRoot if stowRoot not specified
+        staticWado: dicomWebConfig.staticWado,
+        singlepart: dicomWebConfig.singlepart,
+        headers: userAuthenticationService.getAuthorizationHeader(),
+        errorInterceptor: errorHandler.getHTTPErrorHandler(),
+        supportsFuzzyMatching: dicomWebConfig.supportsFuzzyMatching,
+      };
+
+      // TODO -> Three clients sucks, but its better than 1000.
       // TODO -> We'll need to merge auth later.
+      // STOW client added to fix uploads going to wrong endpoint (wadoRoot instead of stowRoot)
       qidoDicomWebClient = dicomWebConfig.staticWado
         ? new StaticWadoClient(qidoConfig)
         : new api.DICOMwebClient(qidoConfig);
@@ -172,6 +186,10 @@ function createDicomWebApi(dicomWebConfig: DicomWebConfig, servicesManager) {
       wadoDicomWebClient = dicomWebConfig.staticWado
         ? new StaticWadoClient(wadoConfig)
         : new api.DICOMwebClient(wadoConfig);
+
+      stowDicomWebClient = dicomWebConfig.staticWado
+        ? new StaticWadoClient(stowConfig)
+        : new api.DICOMwebClient(stowConfig);
     },
     query: {
       studies: {
@@ -292,13 +310,13 @@ function createDicomWebApi(dicomWebConfig: DicomWebConfig, servicesManager) {
 
     store: {
       dicom: async (dataset, request, dicomDict) => {
-        wadoDicomWebClient.headers = getAuthorizationHeader();
+        stowDicomWebClient.headers = getAuthorizationHeader();
         if (dataset instanceof ArrayBuffer) {
           const options = {
             datasets: [dataset],
             request,
           };
-          await wadoDicomWebClient.storeInstances(options);
+          await stowDicomWebClient.storeInstances(options);
         } else {
           let effectiveDicomDict = dicomDict;
 
@@ -326,7 +344,7 @@ function createDicomWebApi(dicomWebConfig: DicomWebConfig, servicesManager) {
             request,
           };
 
-          await wadoDicomWebClient.storeInstances(options);
+          await stowDicomWebClient.storeInstances(options);
         }
       },
     },
