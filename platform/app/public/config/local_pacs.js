@@ -174,7 +174,7 @@ window.config = {
               key: 'title',
               className: 'text-white text-lg font-semibold',
             },
-            'PAXELIA PACS System'
+            'PAXELIA Viewer'
           ),
         ]
       );
