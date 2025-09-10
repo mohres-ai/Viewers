@@ -28,8 +28,12 @@ export default function getUserManagerForOpenIdConnectClient(oidcSettings) {
     response_type: 'code',
     revokeTokensOnSignout: oidcSettings.revokeAccessTokenOnSignout ?? true,
     filterProtocolClaims: true,
-    // the followings are default values in the lib so no need to set them
-    // automaticSilentRenew: true,
+    // Disable automatic discovery to avoid CORS issues
+    loadUserInfo: false,
+    automaticSilentRenew: false,
+    checkSessionInterval: 0,
+    // Use explicit metadata if provided
+    ...(oidcSettings.metadata ? { metadata: oidcSettings.metadata } : {}),
   };
 
   const userManager = new UserManager(settings);

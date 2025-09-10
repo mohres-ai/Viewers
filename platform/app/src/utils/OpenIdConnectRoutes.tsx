@@ -60,37 +60,66 @@ function LogoutComponent(props) {
   return null;
 }
 
-function LoginComponent(userManager) {
-  const queryParams = new URLSearchParams(location.search);
+function LoginComponent({ userManager, oidcAuthority }) {
+  const queryParams = new URLSearchParams(window.location.search);
   const iss = queryParams.get('iss');
   const loginHint = queryParams.get('login_hint');
   const targetLinkUri = queryParams.get('target_link_uri');
-  if (iss !== oidcAuthority) {
+  
+  if (iss && iss !== oidcAuthority) {
     console.error('iss of /login does not match the oidc authority');
-    return null;
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        flexDirection: 'column'
+      }}>
+        <div style={{ color: 'red' }}>Invalid issuer</div>
+      </div>
+    );
   }
 
-  userManager.removeUser().then(() => {
-    if (targetLinkUri !== null) {
-      const ohifRedirectTo = {
-        pathname: new URL(targetLinkUri).pathname,
-      };
-      sessionStorage.setItem('ohif-redirect-to', JSON.stringify(ohifRedirectTo));
-    } else {
-      const ohifRedirectTo = {
-        pathname: '/',
-      };
-      sessionStorage.setItem('ohif-redirect-to', JSON.stringify(ohifRedirectTo));
-    }
+  React.useEffect(() => {
+    userManager.removeUser().then(() => {
+      if (targetLinkUri !== null) {
+        try {
+          const ohifRedirectTo = {
+            pathname: new URL(targetLinkUri).pathname,
+          };
+          sessionStorage.setItem('ohif-redirect-to', JSON.stringify(ohifRedirectTo));
+        } catch (e) {
+          console.warn('Invalid target link URI, using default');
+        }
+      } else {
+        const ohifRedirectTo = {
+          pathname: '/',
+        };
+        sessionStorage.setItem('ohif-redirect-to', JSON.stringify(ohifRedirectTo));
+      }
 
-    if (loginHint !== null) {
-      userManager.signinRedirect({ login_hint: loginHint });
-    } else {
-      userManager.signinRedirect();
-    }
-  });
+      if (loginHint !== null) {
+        userManager.signinRedirect({ login_hint: loginHint });
+      } else {
+        userManager.signinRedirect();
+      }
+    }).catch(error => {
+      console.error('Login initialization error:', error);
+    });
+  }, [userManager, targetLinkUri, loginHint]);
 
-  return null;
+  return (
+    <div style={{
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      height: '100vh',
+      flexDirection: 'column'
+    }}>
+      <div>Redirecting to login...</div>
+    </div>
+  );
 }
 
 function OpenIdConnectRoutes({ oidc, routerBasename, userAuthenticationService }) {
@@ -111,9 +140,24 @@ function OpenIdConnectRoutes({ oidc, routerBasename, userAuthenticationService }
   };
 
   const handleUnauthenticated = () => {
+    console.log('Handling unauthenticated user - redirecting to login');
+    
+    // Check if we're already in the middle of authentication
+    const authInProgress = sessionStorage.getItem('auth-in-progress');
+    if (authInProgress) {
+      console.log('Authentication already in progress, skipping redirect');
+      return null;
+    }
+    
+    // Mark authentication as in progress
+    sessionStorage.setItem('auth-in-progress', 'true');
+    
     // Note: Don't await the redirect. If you make this component async it
     // causes a react error before redirect as it returns a promise of a component rather than a component.
-    userManager.signinRedirect();
+    userManager.signinRedirect().catch(error => {
+      console.error('Signin redirect failed:', error);
+      sessionStorage.removeItem('auth-in-progress');
+    });
 
     // return null because this is used in a react component
     return null;
@@ -149,16 +193,40 @@ function OpenIdConnectRoutes({ oidc, routerBasename, userAuthenticationService }
 
   useEffect(() => {
     const userLoadedHandler = user => {
+      console.log('User loaded:', user);
       userAuthenticationService.setUser(user);
     };
 
+    const userUnloadedHandler = () => {
+      console.log('User unloaded');
+      userAuthenticationService.setUser(null);
+    };
+
+    const silentRenewErrorHandler = error => {
+      console.error('Silent renew error:', error);
+    };
+
     userManager.events.addUserLoaded(userLoadedHandler);
+    userManager.events.addUserUnloaded(userUnloadedHandler);
+    userManager.events.addSilentRenewError(silentRenewErrorHandler);
+
+    // Check if user is already loaded
+    userManager.getUser().then(user => {
+      if (user && !user.expired) {
+        console.log('User already authenticated:', user);
+        userAuthenticationService.setUser(user);
+      }
+    }).catch(error => {
+      console.error('Error getting user:', error);
+    });
 
     // Cleanup on component unmount.
     return () => {
       userManager.events.removeUserLoaded(userLoadedHandler);
+      userManager.events.removeUserUnloaded(userUnloadedHandler);
+      userManager.events.removeSilentRenewError(silentRenewErrorHandler);
     };
-  }, []);
+  }, [userManager, userAuthenticationService]);
 
   const oidcAuthority = oidc[0].authority;
 
@@ -178,9 +246,11 @@ function OpenIdConnectRoutes({ oidc, routerBasename, userAuthenticationService }
   const silent_refresh_uri = new URL(silentRedirectURI).pathname; //.replace(routerBasename,'')
   const post_logout_redirect_uri = new URL(postLogoutRedirectURI).pathname; //.replace(routerBasename,'');
 
-  // const pathnameRelative = pathname.replace(routerBasename,'');
-
-  if (pathname !== redirect_uri) {
+  // Only store redirect info if we're not already on an auth-related path
+  const authPaths = [redirect_uri, silent_refresh_uri, post_logout_redirect_uri, '/login', '/logout'];
+  const isAuthPath = authPaths.some(path => pathname.startsWith(path));
+  
+  if (!isAuthPath && !sessionStorage.getItem('ohif-redirect-to')) {
     sessionStorage.setItem('ohif-redirect-to', JSON.stringify({ pathname, search }));
   }
 
@@ -209,12 +279,32 @@ function OpenIdConnectRoutes({ oidc, routerBasename, userAuthenticationService }
           <CallbackPage
             userManager={userManager}
             onRedirectSuccess={user => {
-              const { pathname, search = '' } = JSON.parse(
-                sessionStorage.getItem('ohif-redirect-to')
-              );
+              // Get redirect info from sessionStorage with fallback
+              const redirectInfo = sessionStorage.getItem('ohif-redirect-to');
+              let pathname = '/';
+              let search = '';
+              
+              if (redirectInfo) {
+                try {
+                  const parsed = JSON.parse(redirectInfo);
+                  pathname = parsed.pathname || '/';
+                  search = parsed.search || '';
+                } catch (e) {
+                  console.warn('Failed to parse redirect info:', e);
+                  pathname = '/';
+                  search = '';
+                }
+              }
 
+              // Clean up the stored redirect info and auth progress flag
+              sessionStorage.removeItem('ohif-redirect-to');
+              sessionStorage.removeItem('auth-in-progress');
+
+              // Set the user in the authentication service
               userAuthenticationService.setUser(user);
+              console.log('User authenticated successfully, navigating to:', pathname);
 
+              // Navigate to the intended destination
               navigate({
                 pathname,
                 search,

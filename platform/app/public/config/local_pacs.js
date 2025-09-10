@@ -32,12 +32,12 @@ window.config = {
         wadoRoot: 'http://localhost:8000/api/v1/wado-rs',
         stowRoot: 'http://localhost:8000/api/v1/stow-rs',
         
-        // No authentication for development
-        // requestOptions: {
-        //   auth: {
-        //     type: 'bearer',
-        //   }
-        // },
+        // Authentication enabled
+        requestOptions: {
+          auth: {
+            type: 'bearer',
+          }
+        },
         
         // Backend capabilities
         qidoSupportsIncludeField: true,
@@ -142,17 +142,38 @@ window.config = {
     }
   },
   
-  // Authentication configuration disabled for development
-  // oidc: [
-  //   {
-  //     authority: 'http://localhost:8000',
-  //     client_id: 'ohif-pacs-viewer',
-  //     redirect_uri: 'http://localhost:3000/callback',
-  //     response_type: 'code',
-  //     scope: 'openid profile email',
-  //     post_logout_redirect_uri: 'http://localhost:3000/',
-  //   },
-  // ],
+  // Authentication configuration
+  oidc: [
+    {
+      authority: 'http://localhost:8000',
+      client_id: 'ohif-pacs-viewer',
+      redirect_uri: 'http://localhost:3000/callback',
+      response_type: 'code',
+      scope: 'openid profile email',
+      post_logout_redirect_uri: 'http://localhost:3000/',
+      silent_redirect_uri: 'http://localhost:3000/silent-refresh.html',
+      automaticSilentRenew: false,
+      revokeAccessTokenOnSignout: true,
+      // Additional settings for stability
+      loadUserInfo: false, // Disable to avoid extra requests
+      checkSessionInterval: 0, // Disable check session
+      silentRequestTimeoutInSeconds: 30,
+      // Explicit endpoint configuration to avoid discovery
+      metadata: {
+        issuer: 'http://localhost:8000',
+        authorization_endpoint: 'http://localhost:8000/auth/authorize',
+        token_endpoint: 'http://localhost:8000/auth/token',
+        userinfo_endpoint: 'http://localhost:8000/auth/userinfo',
+        end_session_endpoint: 'http://localhost:8000/auth/endsession',
+        revocation_endpoint: 'http://localhost:8000/auth/revoke',
+        response_types_supported: ['code'],
+        subject_types_supported: ['public'],
+        id_token_signing_alg_values_supported: ['HS256'],
+        scopes_supported: ['openid', 'profile', 'email'],
+        revocation_endpoint_auth_methods_supported: ['client_secret_basic', 'client_secret_post']
+      }
+    },
+  ],
   
   // White labeling for PACS system
   whiteLabeling: {
