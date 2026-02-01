@@ -1,13 +1,13 @@
 /** @type {AppTypes.Config} */
 window.config = {
-  name: 'config/cloud_pacs.js',
+  name: 'config/production_pacs.js',
   routerBasename: null,
   extensions: [],
   modes: [],
   customizationService: {},
   showStudyList: true,
   maxNumberOfWebWorkers: 3,
-  showWarningMessageForCrossOrigin: false, // Disabled for cloud deployment
+  showWarningMessageForCrossOrigin: false,
   showCPUFallbackMessage: true,
   showLoadingIndicator: true,
   experimentalStudyBrowserSort: false,
@@ -19,20 +19,20 @@ window.config = {
     thumbnail: 75,
     prefetch: 25,
   },
-  defaultDataSourceName: 'cloud_pacs',
+  defaultDataSourceName: 'production_pacs',
   dataSources: [
     {
       namespace: '@ohif/extension-default.dataSourcesModule.dicomweb',
-      sourceName: 'cloud_pacs',
+      sourceName: 'production_pacs',
       configuration: {
-        friendlyName: 'PAXELIA Cloud PACS Server',
+        friendlyName: 'PAXELIA Production PACS Server',
         name: 'PAXELIA PACS',
-        // Main DICOMweb endpoints pointing to cloud backend
-        qidoRoot: 'https://paxelia-925088117749.me-central1.run.app/api/v1/qido-rs',
-        wadoRoot: 'https://paxelia-925088117749.me-central1.run.app/api/v1/wado-rs',
-        stowRoot: 'https://paxelia-925088117749.me-central1.run.app/api/v1/stow-rs',
+        // Production DICOMweb endpoints pointing to your VPS backend
+        qidoRoot: 'https://backend.paxelia.com/api/v1/qido-rs',
+        wadoRoot: 'https://backend.paxelia.com/api/v1/wado-rs',
+        stowRoot: 'https://backend.paxelia.com/api/v1/stow-rs',
 
-        // Authentication enabled for cloud deployment
+        // Authentication enabled for production deployment
         requestOptions: {
           auth: {
             type: 'bearer',
@@ -98,39 +98,39 @@ window.config = {
 
     // Handle backend errors
     if (error.status >= 500) {
-      console.error('Backend server error - check cloud PACS backend status');
+      console.error('Backend server error - check PACS backend status');
     }
 
     // Handle CORS errors
     if (error.status === 0) {
-      console.warn('CORS error - ensure cloud backend CORS is configured for frontend origin');
+      console.warn('CORS error - ensure backend CORS is configured for frontend origin');
     }
   },
 
-  // Authentication configuration for cloud deployment
+  // Authentication configuration for production
   oidc: [
     {
-      authority: 'https://paxelia-925088117749.me-central1.run.app',
+      authority: 'https://backend.paxelia.com',
       client_id: 'ohif-pacs-viewer',
-      redirect_uri: 'http://localhost:3000/callback', // Still localhost since frontend runs locally
+      redirect_uri: 'https://viewer.paxelia.com/callback',
       response_type: 'code',
       scope: 'openid profile email',
-      post_logout_redirect_uri: 'http://localhost:3000/',
-      silent_redirect_uri: 'http://localhost:3000/silent-refresh.html',
+      post_logout_redirect_uri: 'https://viewer.paxelia.com/',
+      silent_redirect_uri: 'https://viewer.paxelia.com/silent-refresh.html',
       automaticSilentRenew: false,
       revokeAccessTokenOnSignout: true,
-      // Optimized settings for cloud deployment
+      // Production settings
       loadUserInfo: false,
       checkSessionInterval: 0,
       silentRequestTimeoutInSeconds: 30,
-      // Explicit endpoint configuration for cloud backend
+      // Explicit endpoint configuration for production backend
       metadata: {
-        issuer: 'https://paxelia-925088117749.me-central1.run.app',
-        authorization_endpoint: 'https://paxelia-925088117749.me-central1.run.app/auth/authorize',
-        token_endpoint: 'https://paxelia-925088117749.me-central1.run.app/auth/token',
-        userinfo_endpoint: 'https://paxelia-925088117749.me-central1.run.app/auth/userinfo',
-        end_session_endpoint: 'https://paxelia-925088117749.me-central1.run.app/auth/endsession',
-        revocation_endpoint: 'https://paxelia-925088117749.me-central1.run.app/auth/revoke',
+        issuer: 'https://backend.paxelia.com',
+        authorization_endpoint: 'https://backend.paxelia.com/auth/authorize',
+        token_endpoint: 'https://backend.paxelia.com/auth/token',
+        userinfo_endpoint: 'https://backend.paxelia.com/auth/userinfo',
+        end_session_endpoint: 'https://backend.paxelia.com/auth/endsession',
+        revocation_endpoint: 'https://backend.paxelia.com/auth/revoke',
         response_types_supported: ['code'],
         subject_types_supported: ['public'],
         id_token_signing_alg_values_supported: ['HS256'],
@@ -160,7 +160,7 @@ window.config = {
               key: 'title',
               className: 'text-white text-lg font-semibold',
             },
-            'PAXELIA Cloud Viewer'
+            'PAXELIA Viewer'
           ),
         ]
       );
