@@ -149,11 +149,14 @@ module.exports = (env, argv) => {
       // Causes Cypress: `wait-on` issue in CI
       // compress: true,
       // http2: true,
-      // https: true,
+      https: true, // Enable HTTPS for local development (required for OIDC crypto)
       open: true,
       port: OHIF_PORT,
+      host: '0.0.0.0', // Allow external connections
+      allowedHosts: 'all', // Fix Invalid Host/Origin header errors
       client: {
         overlay: { errors: true, warnings: false },
+        webSocketURL: 'auto://0.0.0.0:0/ws', // Fix websocket connection issues
       },
       proxy: {
         '/dicomweb': 'http://localhost:5000',
