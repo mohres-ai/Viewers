@@ -156,7 +156,13 @@ module.exports = (env, argv) => {
       allowedHosts: 'all', // Fix Invalid Host/Origin header errors
       client: {
         overlay: { errors: true, warnings: false },
-        webSocketURL: 'auto://0.0.0.0:0/ws', // Fix websocket connection issues
+        // Only enable WebSocket in development
+        webSocketURL: isProdBuild ? false : {
+          hostname: '0.0.0.0',
+          pathname: '/ws',
+          port: '',
+          protocol: 'auto:'
+        },
       },
       proxy: {
         '/dicomweb': 'http://localhost:5000',
