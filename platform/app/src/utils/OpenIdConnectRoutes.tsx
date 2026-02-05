@@ -141,22 +141,32 @@ function OpenIdConnectRoutes({ oidc, routerBasename, userAuthenticationService }
 
   const handleUnauthenticated = () => {
     console.log('Handling unauthenticated user - redirecting to login');
-    
+
     // Check if we're already in the middle of authentication
     const authInProgress = sessionStorage.getItem('auth-in-progress');
-    if (authInProgress) {
+    const authTimestamp = sessionStorage.getItem('auth-timestamp');
+    const currentTime = Date.now();
+
+    // If auth was started more than 2 minutes ago, reset it
+    if (authInProgress && authTimestamp && (currentTime - parseInt(authTimestamp)) > 120000) {
+      console.log('Authentication timeout detected, resetting auth state');
+      sessionStorage.removeItem('auth-in-progress');
+      sessionStorage.removeItem('auth-timestamp');
+    } else if (authInProgress) {
       console.log('Authentication already in progress, skipping redirect');
       return null;
     }
-    
-    // Mark authentication as in progress
+
+    // Mark authentication as in progress with timestamp
     sessionStorage.setItem('auth-in-progress', 'true');
-    
+    sessionStorage.setItem('auth-timestamp', currentTime.toString());
+
     // Note: Don't await the redirect. If you make this component async it
     // causes a react error before redirect as it returns a promise of a component rather than a component.
     userManager.signinRedirect().catch(error => {
       console.error('Signin redirect failed:', error);
       sessionStorage.removeItem('auth-in-progress');
+      sessionStorage.removeItem('auth-timestamp');
     });
 
     // return null because this is used in a react component
@@ -299,6 +309,7 @@ function OpenIdConnectRoutes({ oidc, routerBasename, userAuthenticationService }
               // Clean up the stored redirect info and auth progress flag
               sessionStorage.removeItem('ohif-redirect-to');
               sessionStorage.removeItem('auth-in-progress');
+              sessionStorage.removeItem('auth-timestamp');
 
               // Set the user in the authentication service
               userAuthenticationService.setUser(user);
