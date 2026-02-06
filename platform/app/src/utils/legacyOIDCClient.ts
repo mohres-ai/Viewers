@@ -22,6 +22,8 @@ export default function getUserManagerForOpenIdConnectClient(oidcSettings) {
     automaticSilentRenew: true,
     revokeAccessTokenOnSignout: true,
     filterProtocolClaims: true,
+    // Use localStorage for persistent token storage
+    userStore: typeof window !== 'undefined' ? window.localStorage : undefined,
   };
 
   const userManager = new UserManager(settings);

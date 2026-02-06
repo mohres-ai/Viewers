@@ -75,7 +75,6 @@ export function UserAuthenticationProvider({ children, service }) {
    *
    * @returns void
    */
-  // TODO: should this be a useEffect or not?
   useEffect(() => {
     if (service) {
       service.setServiceImplementation({

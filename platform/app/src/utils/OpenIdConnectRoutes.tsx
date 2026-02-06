@@ -205,6 +205,9 @@ function OpenIdConnectRoutes({ oidc, routerBasename, userAuthenticationService }
     const userLoadedHandler = user => {
       console.log('User loaded:', user);
       userAuthenticationService.setUser(user);
+      // Clear authentication in progress flags when user is successfully loaded
+      sessionStorage.removeItem('auth-in-progress');
+      sessionStorage.removeItem('auth-timestamp');
     };
 
     const userUnloadedHandler = () => {
@@ -214,20 +217,56 @@ function OpenIdConnectRoutes({ oidc, routerBasename, userAuthenticationService }
 
     const silentRenewErrorHandler = error => {
       console.error('Silent renew error:', error);
+      // If silent renew fails, try to get user again or redirect to login
+      userManager.getUser().then(user => {
+        if (!user || user.expired) {
+          console.log('Silent renew failed and user is expired, clearing auth state');
+          userAuthenticationService.setUser(null);
+          sessionStorage.removeItem('auth-in-progress');
+          sessionStorage.removeItem('auth-timestamp');
+        }
+      }).catch(e => {
+        console.error('Error getting user after silent renew failure:', e);
+      });
+    };
+
+    const userSignedOutHandler = () => {
+      console.log('User signed out');
+      userAuthenticationService.setUser(null);
+      sessionStorage.removeItem('auth-in-progress');
+      sessionStorage.removeItem('auth-timestamp');
     };
 
     userManager.events.addUserLoaded(userLoadedHandler);
     userManager.events.addUserUnloaded(userUnloadedHandler);
     userManager.events.addSilentRenewError(silentRenewErrorHandler);
+    userManager.events.addUserSignedOut(userSignedOutHandler);
 
-    // Check if user is already loaded
+    // Check if user is already loaded or can be restored from storage
     userManager.getUser().then(user => {
       if (user && !user.expired) {
         console.log('User already authenticated:', user);
         userAuthenticationService.setUser(user);
+        // Clear any stale auth flags
+        sessionStorage.removeItem('auth-in-progress');
+        sessionStorage.removeItem('auth-timestamp');
+      } else if (user && user.expired) {
+        console.log('User token expired, attempting silent renewal');
+        // Try silent renewal for expired tokens
+        userManager.signinSilent().then(renewedUser => {
+          console.log('Silent renewal successful:', renewedUser);
+          userAuthenticationService.setUser(renewedUser);
+        }).catch(error => {
+          console.log('Silent renewal failed:', error);
+          userAuthenticationService.setUser(null);
+        });
+      } else {
+        console.log('No authenticated user found');
+        userAuthenticationService.setUser(null);
       }
     }).catch(error => {
-      console.error('Error getting user:', error);
+      console.error('Error getting user on startup:', error);
+      userAuthenticationService.setUser(null);
     });
 
     // Cleanup on component unmount.
@@ -235,6 +274,7 @@ function OpenIdConnectRoutes({ oidc, routerBasename, userAuthenticationService }
       userManager.events.removeUserLoaded(userLoadedHandler);
       userManager.events.removeUserUnloaded(userUnloadedHandler);
       userManager.events.removeSilentRenewError(silentRenewErrorHandler);
+      userManager.events.removeUserSignedOut(userSignedOutHandler);
     };
   }, [userManager, userAuthenticationService]);
 

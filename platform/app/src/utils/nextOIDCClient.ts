@@ -30,8 +30,10 @@ export default function getUserManagerForOpenIdConnectClient(oidcSettings) {
     filterProtocolClaims: true,
     // Disable automatic discovery to avoid CORS issues
     loadUserInfo: false,
-    automaticSilentRenew: false,
-    checkSessionInterval: 0,
+    automaticSilentRenew: true,
+    checkSessionInterval: 2000, // Check every 2 seconds
+    // Use localStorage for persistent token storage
+    userStore: typeof window !== 'undefined' ? window.localStorage : undefined,
     // Use explicit metadata if provided
     ...(oidcSettings.metadata ? { metadata: oidcSettings.metadata } : {}),
   };
